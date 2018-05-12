@@ -2,6 +2,7 @@
 #define CONTEXT_H
 
 typedef struct	s_context {
+	char			*bin_fullpath; /* malloc */
 	char			*output_filename; /* malloc */
 	int				output_fd; /* open */
 	unsigned char	options;

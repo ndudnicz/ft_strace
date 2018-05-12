@@ -1,4 +1,4 @@
-#define _GNU_SOURCE /* dprintf */
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <string.h>
 
@@ -47,7 +47,7 @@ set_filename(
 ) {
 	ctx->options |= OPT_OUTPUT_FILE;
 	if (param == NULL) {
-		ft_exit_error(INVALID_OPTION, NULL);
+		ft_exit_error(ARGUMENT_MISSING, NULL);
 	} else {
 		if ((ctx->output_filename = strdup(param)) == NULL) {
 			ft_exit_perror(MALLOC_FAILED, NULL);
