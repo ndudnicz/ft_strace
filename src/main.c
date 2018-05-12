@@ -26,22 +26,24 @@ int		main(
 	t_context	ctx;
 
 	memset(&ctx, 0, sizeof(t_context));
-
 	get_options(&ctx, &ac, av);
-
 	if (ac < 2) {
+
 		dprintf(2, "ft_strace: must have PROG [ARGS]\n");
 		usage(EXIT_FAILURE);
-	}
 
-	if (ctx.options & OPT_OUTPUT_FILE) {
+	} else if (ctx.options & OPT_OUTPUT_FILE) {
+
 		(void)open_output_file(&ctx);
-	}
 
-	if ((ctx.bin_fullpath = get_bin_path(av[1])) == NULL) {
+	} else if ((ctx.bin_fullpath = get_bin_path(av[1])) == NULL) {
+
 		ft_exit_perror(CANT_STAT, av[1]);
+
 	} else {
+
 		printf("%s\n", ctx.bin_fullpath);
+
 	}
 	free_context(&ctx);
 	return 0;

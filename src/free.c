@@ -3,7 +3,6 @@
 
 #include "context.h"
 
-#include <stdio.h>
 int
 free_context(
 	t_context *ctx

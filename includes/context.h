@@ -1,7 +1,7 @@
 #ifndef CONTEXT_H
 #define CONTEXT_H
 
-typedef struct	s_context {
+typedef struct {
 	char			*bin_fullpath; /* malloc */
 	char			*output_filename; /* malloc */
 	int				output_fd; /* open */
