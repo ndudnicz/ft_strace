@@ -11,7 +11,11 @@ PATH_OBJ = obj
 PATH_INCLUDES = includes/
 
 SRC =	\
-main.c
+main.c \
+get_bin_path.c \
+options.c \
+output_file.c \
+error.c
 
 OBJ = $(SRC:%.c=obj/%.o)
 
