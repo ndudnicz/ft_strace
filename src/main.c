@@ -32,9 +32,9 @@ int		main(
 		dprintf(2, "ft_strace: must have PROG [ARGS]\n");
 		usage(EXIT_FAILURE);
 
-	} else if (ctx.options & OPT_OUTPUT_FILE) {
+	} else if ((ctx.options & OPT_OUTPUT_FILE) && open_output_file(&ctx) <= 0) {
 
-		(void)open_output_file(&ctx);
+		ft_exit_perror(CANT_OPEN, ctx.output_filename);
 
 	} else if ((ctx.bin_fullpath = get_bin_path(av[1])) == NULL) {
 
