@@ -2,6 +2,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h> /*execve*/
+#include <sys/types.h> /*fork*/
+#include <sys/wait.h> /*wait*/
+#include <sys/resource.h>
 
 #include "context.h"
 #include "error.h"
@@ -20,8 +24,8 @@ usage(
 
 int		main(
 	int ac,
-	char **av,
-	char **env
+	char *av[],
+	char *env[]
 ) {
 	t_context	ctx;
 
@@ -42,8 +46,27 @@ int		main(
 
 	} else {
 
-		printf("%s\n", ctx.bin_fullpath);
+		pid_t			pid = 0;
+		int				wstatus;
+		struct rusage	rusage;
 
+		if ((pid = fork()) > 0) {
+
+			while (1) {
+				wait4(pid, &wstatus, 0, &rusage);
+				printf("%x\n", WEXITSTATUS(wstatus));
+				break;
+			}
+
+		} else if (pid == 0) {
+
+			execve(ctx.bin_fullpath, av + 1, env);
+
+		} else {
+
+			ft_exit_perror(FORK_FAILED, NULL);
+
+		}
 	}
 	free_context(&ctx);
 	return 0;
