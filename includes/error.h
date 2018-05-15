@@ -8,6 +8,7 @@
 # define INVALID_OPTION "invalid option --"
 # define MALLOC_FAILED "malloc failed"
 # define ARGUMENT_MISSING "missing argument."
+# define FORK_FAILED "fork() failed."
 
 __attribute__ ((noreturn)) void
 ft_exit_error(
