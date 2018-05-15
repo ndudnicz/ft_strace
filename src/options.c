@@ -111,7 +111,7 @@ get_options(
 			}
 		}
 		else
-			i++;
+			return 0;
 	}
 	del_null_params(ac, av, n);
 	return 0;
