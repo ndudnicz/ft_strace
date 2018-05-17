@@ -48,12 +48,11 @@ int		main(
 
 		pid_t			pid = 0;
 		int				wstatus;
-		struct rusage	rusage;
 
 		if ((pid = fork()) > 0) {
 
 			while (1) {
-				wait4(pid, &wstatus, 0, &rusage);
+				waitpid(pid, &wstatus, 0);
 				printf("%x\n", WEXITSTATUS(wstatus));
 				break;
 			}

@@ -43,12 +43,16 @@ get_bin_path (
 	if (env_path == NULL) {
 		ft_exit_perror(GETENV_FAILED, NULL);
 	} else {
-		while ((path = strsep(&env_path, ":")) != NULL) {
-			if ((fullpath = check_path(path, bin_name))) {
-				return fullpath;
+		if (strstr(bin_name, "./") == bin_name || strstr(bin_name, "/") == bin_name) {
+			return strdup(bin_name);
+		} else {
+			while ((path = strsep(&env_path, ":")) != NULL) {
+				if ((fullpath = check_path(path, bin_name))) {
+					return fullpath;
+				}
 			}
+			return NULL;
 		}
-		return NULL;
 	}
 
 }
