@@ -54,3 +54,4 @@ dkms.conf
 ft_strace
 t.c
 *.log
+test.c

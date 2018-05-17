@@ -100,8 +100,7 @@ get_options(
 
 	while (i < *ac)
 	{
-		if (av[i][0] == '-')
-		{
+		if (av[i][0] == '-') {
 			if ((jump = switch_set_options(av[i], av[i + 1], ctx)) < 0)
 				return 1;
 			if (jump == 1) {
@@ -110,8 +109,10 @@ get_options(
 				av[i] = NULL; av[i + 1] = NULL; n += 2; i += 2;
 			}
 		}
-		else
+		else {
+			del_null_params(ac, av, n);
 			return 0;
+		}
 	}
 	del_null_params(ac, av, n);
 	return 0;

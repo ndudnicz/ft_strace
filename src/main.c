@@ -4,8 +4,10 @@
 #include <stdlib.h>
 #include <unistd.h> /*execve*/
 #include <sys/types.h> /*fork*/
-#include <sys/wait.h> /*wait*/
-#include <sys/resource.h>
+#include <sys/wait.h> /*waitpid*/
+#include <sys/ptrace.h> /*ptrace*/
+#include <sys/user.h> /*strust user*/
+#include <sys/reg.h> /*ORIG_RAX*/
 
 #include "context.h"
 #include "error.h"
@@ -46,19 +48,31 @@ int		main(
 
 	} else {
 
-		pid_t			pid = 0;
-		int				wstatus;
+		pid_t						pid = 0;
+		int							wstatus;
+		struct user_regs_struct		regs;
+		int							syscall;
 
 		if ((pid = fork()) > 0) {
 
-			while (1) {
-				waitpid(pid, &wstatus, 0);
-				printf("%x\n", WEXITSTATUS(wstatus));
-				break;
+			ptrace(PTRACE_SEIZE, pid, NULL, NULL);
+/*			ptrace(PTRACE_INTERRUPT, pid, NULL, NULL);*/
+			ptrace(PTRACE_SETOPTIONS, pid, 0, PTRACE_O_TRACESYSGOOD);
+			ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
+
+			while (waitpid(pid, &wstatus, 0) && !WIFEXITED(wstatus)) {
+
+				ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
+				if (WIFSTOPPED(wstatus) && (WSTOPSIG(wstatus) == 0x80)) {
+					syscall = ptrace(PTRACE_PEEKUSER, pid, sizeof(long)*ORIG_RAX, NULL);
+					ptrace(PTRACE_GETREGS, pid, NULL, &regs);
+					dprintf(ctx.output_fd, "syscall(%d)\n", syscall);
+				}
+
 			}
 
 		} else if (pid == 0) {
-
+			kill(getpid(), SIGSTOP);
 			execve(ctx.bin_fullpath, av + 1, env);
 
 		} else {

@@ -36,9 +36,9 @@ char*
 get_bin_path (
 	char const *const bin_name
 ) {
-	char		*env_path = secure_getenv("PATH");
-	char		*path = NULL;
-	char		*fullpath;
+	char	*env_path = secure_getenv("PATH");
+	char	*path = NULL;
+	char	*fullpath;
 
 	if (env_path == NULL) {
 		ft_exit_perror(GETENV_FAILED, NULL);
@@ -54,5 +54,5 @@ get_bin_path (
 			return NULL;
 		}
 	}
-
+return NULL;
 }
