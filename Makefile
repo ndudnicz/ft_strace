@@ -2,7 +2,7 @@ NAME = ft_strace
 
 CC = gcc
 
-FLAGS = -Wextra -Wall -std=c89 -g -fsanitize=address# -Werror
+FLAGS = -Wextra -Wall -g -fsanitize=address# -Werror -std=c89
 
 PATH_SRC = src
 
@@ -16,6 +16,9 @@ get_bin_path.c \
 options.c \
 output_file.c \
 free.c \
+signal_killer.c \
+syscalls_table.c \
+syscalls_loop.c \
 error.c
 
 OBJ = $(SRC:%.c=obj/%.o)

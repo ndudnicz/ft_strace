@@ -4,10 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h> /*execve*/
 #include <sys/types.h> /*fork*/
-#include <sys/wait.h> /*waitpid*/
-#include <sys/ptrace.h> /*ptrace*/
-#include <sys/user.h> /*strust user*/
-#include <sys/reg.h> /*ORIG_RAX*/
+#include <signal.h>
 
 #include "context.h"
 #include "error.h"
@@ -15,6 +12,8 @@
 #include "options.h"
 #include "output_file.h"
 #include "free.h"
+#include "signal_killer.h"
+#include "syscalls_loop.h"
 
 __attribute__ ((noreturn)) static void
 usage(
@@ -47,38 +46,22 @@ int		main(
 		ft_exit_perror(CANT_STAT, av[1]);
 
 	} else {
-
 		pid_t						pid = 0;
-		int							wstatus;
-		struct user_regs_struct		regs;
-		int							syscall;
 
-		if ((pid = fork()) > 0) {
-
-			ptrace(PTRACE_SEIZE, pid, NULL, NULL);
-/*			ptrace(PTRACE_INTERRUPT, pid, NULL, NULL);*/
-			ptrace(PTRACE_SETOPTIONS, pid, 0, PTRACE_O_TRACESYSGOOD);
-			ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-
-			while (waitpid(pid, &wstatus, 0) && !WIFEXITED(wstatus)) {
-
-				ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-				if (WIFSTOPPED(wstatus) && (WSTOPSIG(wstatus) == 0x80)) {
-					syscall = ptrace(PTRACE_PEEKUSER, pid, sizeof(long)*ORIG_RAX, NULL);
-					ptrace(PTRACE_GETREGS, pid, NULL, &regs);
-					dprintf(ctx.output_fd, "syscall(%d)\n", syscall);
-				}
-
-			}
-
-		} else if (pid == 0) {
-			kill(getpid(), SIGSTOP);
-			execve(ctx.bin_fullpath, av + 1, env);
-
+		if (signal_killer() < 0) {
+			ft_exit_perror(SIGACTION_FAILED, NULL);
 		} else {
-
-			ft_exit_perror(FORK_FAILED, NULL);
-
+			switch (pid = fork()) {
+				case -1:
+				ft_exit_perror(FORK_FAILED, NULL);
+				case 0:
+				kill(getpid(), SIGSTOP);
+				execve(ctx.bin_fullpath, av + 1, env);
+				break;
+				default:
+				syscalls_loop(pid);
+				break;
+			}
 		}
 	}
 	free_context(&ctx);

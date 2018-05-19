@@ -9,6 +9,7 @@
 # define MALLOC_FAILED "malloc failed"
 # define ARGUMENT_MISSING "missing argument."
 # define FORK_FAILED "fork() failed."
+# define SIGACTION_FAILED "sigaction failed."
 
 __attribute__ ((noreturn)) void
 ft_exit_error(
