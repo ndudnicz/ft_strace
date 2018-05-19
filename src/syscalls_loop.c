@@ -16,6 +16,7 @@
 #include "context.h"
 #include "syscalls_table.h"
 #include "syscalls_loop.h"
+#include "signal_handler.h"
 
 int
 syscalls_loop(
@@ -32,9 +33,9 @@ syscalls_loop(
 	ptrace(PTRACE_SEIZE, pid, NULL, PTRACE_O_TRACESYSGOOD|PTRACE_O_TRACEEXEC|PTRACE_O_TRACEEXIT);
 	while (wait4(pid, &wstatus, 0, &rusage) && !WIFEXITED(wstatus)) {
 
-			// printf("WIFSTOPPED:%d\n", WIFSTOPPED(wstatus));
-			// printf("SIG:%d\n", WSTOPSIG(wstatus));
-			if (WIFSTOPPED(wstatus) && WSTOPSIG(wstatus) == SIGINT) {
+			// printf("-> WIFSTOPPED:%d SIG:%d SIGTRAP:%d\n", WIFSTOPPED(wstatus), WSTOPSIG(wstatus), WSTOPSIG(wstatus) & 0x80);
+			if (WIFSTOPPED(wstatus) && WSTOPSIG(wstatus) != SIGTRAP && WSTOPSIG(wstatus) != (SIGTRAP|0x80)) {
+				(void)signal_handler(ctx, wstatus);
 				ptrace(PTRACE_DETACH, pid, NULL, NULL);
 				break;
 			}
@@ -62,9 +63,9 @@ syscalls_loop(
 			dprintf(ctx.output_fd, "%s", syscalls_table[syscall].name);
 			ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 			wait4(pid, &wstatus, 0, &rusage);
-			// printf("WIFSTOPPED:%d\n", WIFSTOPPED(wstatus));
-			// printf("SIG:%d\n", WSTOPSIG(wstatus));
-			if (WIFSTOPPED(wstatus) && WSTOPSIG(wstatus) == SIGINT) {
+			// printf("-> WIFSTOPPED:%d SIG:%d SIGTRAP:%d\n", WIFSTOPPED(wstatus), WSTOPSIG(wstatus), WSTOPSIG(wstatus) & 0x80);
+			if (WIFSTOPPED(wstatus) && WSTOPSIG(wstatus) != SIGTRAP && WSTOPSIG(wstatus) != (SIGTRAP|0x80)) {
+				(void)signal_handler(ctx, wstatus);
 				ptrace(PTRACE_DETACH, pid, NULL, NULL);
 				break;
 			}
@@ -80,10 +81,10 @@ syscalls_loop(
 			** through strerror()
 			*/
 			dprintf(ctx.output_fd, "(...) = %ld (%ld)(%p)", retsyscall < 0 ? -1 : retsyscall, retsyscall,retsyscall);
-			if ((unsigned long)(-retsyscall) != ENOSYS && retsyscall < 0) {
-				error = strerror(retsyscall * -1);
-				dprintf(ctx.output_fd, " (%s)", error);
-			}
+			// if ((unsigned long)(-retsyscall) != ENOSYS && retsyscall < 0) {
+			// 	error = strerror(retsyscall * -1);
+			// 	dprintf(ctx.output_fd, " (%s)", error);
+			// }
 			dprintf(ctx.output_fd, "\n");
 
 		/* See you next syscall */

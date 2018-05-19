@@ -19,6 +19,7 @@ free.c \
 signal_killer.c \
 syscalls_table.c \
 syscalls_loop.c \
+signal_handler.c \
 error.c
 
 OBJ = $(SRC:%.c=obj/%.o)
