@@ -41,7 +41,7 @@ for (let i in data) {
 		for (let ii = 9 - data[i].length; ii >= 0; ii--) {
 			params += params == "" ? "E_NONE":",E_NONE"
 		}
-		console.log('{.name="'+data[i][1].replace("sys_", "")+'",', ".n_param = "+ data[i][2]+ ", .params = {",params, "}, .mode = 0 },");
+		console.log('{.name="'+data[i][1].replace("sys_", "")+'",', ".n_param = "+ data[i][2]+ ", .params = {",params, "}, .mode = 0, .n_param_p1 = 0 },");
 	}
 	// let retReg = /^{ ([a-z]+)/
 	// if (data[i].match(retReg)) {
