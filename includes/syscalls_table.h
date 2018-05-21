@@ -19,6 +19,7 @@ typedef struct		s_syscall {
 	int const				n_param;
 	enum e_param const		params[6];
 	unsigned char const		mode;
+	int const				n_param_p1;
 }					t_syscall;
 
 extern t_syscall const syscalls_table[SYSCALL_NUMBER];

@@ -14,7 +14,11 @@ check_path (
 	struct stat		s;
 	char			*fullpath = NULL;
 
-	if (asprintf(&fullpath, "%s/%s", path, bin_name) < 0) {
+	if (strstr(bin_name, "./") == bin_name && asprintf(&fullpath, "%s", bin_name) < 0) {
+		ft_exit_perror(ASPRINTF_FAILED, NULL);
+	} else if (fullpath == NULL && strstr(bin_name, "/") == bin_name && asprintf(&fullpath, "%s", bin_name) < 0) {
+		ft_exit_perror(ASPRINTF_FAILED, NULL);
+	} else if (fullpath == NULL && asprintf(&fullpath, "%s/%s", path, bin_name) < 0) {
 		ft_exit_perror(ASPRINTF_FAILED, NULL);
 	} else {
 		if (stat(fullpath, &s) < 0) {
@@ -44,7 +48,7 @@ get_bin_path (
 		ft_exit_perror(GETENV_FAILED, NULL);
 	} else {
 		if (strstr(bin_name, "./") == bin_name || strstr(bin_name, "/") == bin_name) {
-			return strdup(bin_name);
+			return check_path(path, bin_name);
 		} else {
 			while ((path = strsep(&env_path, ":")) != NULL) {
 				if ((fullpath = check_path(path, bin_name))) {
@@ -54,5 +58,5 @@ get_bin_path (
 			return NULL;
 		}
 	}
-return NULL;
+	return NULL;
 }

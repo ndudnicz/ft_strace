@@ -55,10 +55,10 @@ int		main(
 				case -1:
 				ft_exit_perror(FORK_FAILED, NULL);
 				case 0:
-				signal_killer();
 				execve(ctx.bin_fullpath, av + 1, env);
 				break;
 				default:
+				signal_killer();
 				(void)syscalls_loop(ctx, pid);
 				break;
 			}
