@@ -86,11 +86,12 @@ peek_string(
 	// 		kill(pid, SIGKILL);
 	// 		exit(EXIT_FAILURE);
 	// 	};
-		printf("%ld\n", tmp);
+		printf("%016lx\n", tmp);
 		memcpy(*str + n, &tmp, sizeof(long));
 		tmp = 0;
 		n += sizeof(long);
-	} while (n < (32 / sizeof(long)) && !is_null_terminated(tmp));
+	} while (n < (32 * sizeof(long)) && !is_null_terminated(tmp));
+	(*str)[n] = 0;
 	// char *s = &(char*)tmp;
 	// printf("%8s", tmp);
 	return 0;
