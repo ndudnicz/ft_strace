@@ -24,7 +24,6 @@ static int
 is_null_terminated(
 	long n
 ) {
-	printf("\n-----------> %016lx\n", n);
 	return (!((n>>56)&0xff) || !((n>>48)&0xff) || !((n>>40)&0xff) ||
 			!((n>>32)&0xff) || !((n>>24)&0xff) || !((n>>16)&0xff) ||
 			!((n>>8)&0xff) || !(n&0xff));
@@ -35,8 +34,9 @@ print_escaped_str(
 	t_context ctx,
 	char const *const str
 ) {
+	size_t const	len_max = strlen(str) < 32 ? strlen(str) : 32;
 	write(ctx.output_fd, "\"", 1);
-	for (size_t i = 0; i < strlen(str); ++i) {
+	for (size_t i = 0; i < len_max; ++i) {
 		switch (str[i]) {
 			case 0x07:
 			write(ctx.output_fd, "\\a", 2);
@@ -75,23 +75,25 @@ peek_string(
 	struct user_regs_struct *regs,
 	int const reg_index
 ) {
-	long		tmp = 0;
+	unsigned long	tmp = 0;
 	size_t		n = 0;
 
 	*str = (char*)calloc(1, 33);
 	do {
-		tmp = ptrace(PTRACE_PEEKDATA, pid, ((long*)regs)[reg_index] + n, NULL);
-	// 	if (tmp == -1) {
-			// printf("%ld\n", tmp);
-	// 		kill(pid, SIGKILL);
-	// 		exit(EXIT_FAILURE);
-	// 	};
-		printf("%016lx\n", tmp);
+		tmp = (unsigned long)ptrace(PTRACE_PEEKDATA, pid, ((long*)regs)[reg_index] + n, NULL);
+		// if (tmp == -1) {
+		// 	printf("%ld\n", tmp);
+		// 	kill(pid, SIGKILL);
+		// 	exit(EXIT_FAILURE);
+		// };
 		memcpy(*str + n, &tmp, sizeof(long));
-		tmp = 0;
+		// tmp = 0;
+		// printf("n:%zu\n", n);
 		n += sizeof(long);
-	} while (n < (32 * sizeof(long)) && !is_null_terminated(tmp));
-	(*str)[n] = 0;
+		// printf("tmp: %016lx is_null_terminated(tmp): %d\n", tmp, is_null_terminated(tmp));
+	} while (n < 32 && !is_null_terminated(tmp));
+	// printf("len:%zu\n", strlen(*str));
+	// (*str)[n] = 0;
 	// char *s = &(char*)tmp;
 	// printf("%8s", tmp);
 	return 0;
@@ -113,11 +115,11 @@ print_param(
 		break;
 
 		case E_INT:
-		dprintf(ctx.output_fd, "%ld", ((long*)regs)[reg_index]);
+		dprintf(ctx.output_fd, "%d", (int)((long*)regs)[reg_index]);
 		break;
 
 		case E_UINT:
-		dprintf(ctx.output_fd, "%lu", ((unsigned long*)regs)[reg_index]);
+		dprintf(ctx.output_fd, "%u", (unsigned int)((unsigned long*)regs)[reg_index]);
 		break;
 
 		case E_PTR:
@@ -133,7 +135,7 @@ print_param(
 		// perror(NULL);
 		print_escaped_str(ctx, str);
 		if (strlen(str) == 32) {
-			write(ctx.output_fd, "...", 2);
+			write(ctx.output_fd, "...", 3);
 		}
 		memset(str, 0, strlen(str));
 		free(str);
