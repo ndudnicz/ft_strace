@@ -254,53 +254,6 @@ syscalls_loop(
 			ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 
 		}
-
-		// /* Syscall has been called by didn't returned yet */
-		// syscall = ptrace(PTRACE_PEEKUSER, pid, sizeof(long)*ORIG_RAX, NULL);
-		// ptrace(PTRACE_GETREGS, pid, NULL, &regs);
-		// retsyscall = ptrace(PTRACE_PEEKUSER, pid, sizeof(long)*RAX, NULL);
-        //
-		// if (syscall == __NR_exit || syscall == __NR_exit_group) {
-		// 	dprintf(2, "exited: %s\n", syscalls_table[syscall].name);
-		// 	ptrace(PTRACE_GETREGS, pid, NULL, &regs);
-		// 	printf("%s(%d) = ?\n", syscalls_table[syscall].name, (int)regs.rdi);
-		// 	printf("+++ exited with %hhu +++\n", (unsigned char)regs.rdi);
-		// 	break;
-		// }
-        //
-		// /* Print the first part of the line and wait for the syscall return */
-		// dprintf(ctx.output_fd, "%s", syscalls_table[syscall].name);
-		// ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-		// wait4(pid, &wstatus, 0, &rusage);
-		// if (WIFSTOPPED(wstatus) && WSTOPSIG(wstatus) != SIGTRAP && WSTOPSIG(wstatus) != (SIGTRAP|0x80)) {
-		// 	dprintf(2, "WIFSTOPPED2\n");
-		// 	(void)signal_handler(ctx, wstatus);
-		// 	ptrace(PTRACE_DETACH, pid, NULL, NULL);
-		// 	// return 0;
-		// 	break;
-		// } else {
-		// 	/* Syscall returned, finish to print the line */
-		// 	syscall = ptrace(PTRACE_PEEKUSER, pid, O_RAX, NULL);
-		// 	ptrace(PTRACE_GETREGS, pid, NULL, &regs);
-		// 	retsyscall = ptrace(PTRACE_PEEKUSER, pid, R_RAX, NULL);
-        //
-		// 	/*
-		// 	** retsyscall < 0 ? -1 : retsyscall, errno is given as negative int
-		// 	** so print -1, take the abs retsyscall value and get the errno str
-		// 	** through strerror()
-		// 	*/
-		// 	dprintf(ctx.output_fd, "(...) = %ld (%ld)(%p)", retsyscall < 0 ? -1 : retsyscall, retsyscall,retsyscall);
-		// 	if ((unsigned long)(-retsyscall) != ENOSYS && retsyscall < 0) {
-		// 		error = strerror(retsyscall * -1);
-		// 		// dprintf(ctx.output_fd, " (%s)", error);
-		// 	}
-		// 	dprintf(ctx.output_fd, "\n");
-        //
-		// }
-        //
-        //
-		// /* See you next syscall */
-		// ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 	}
 	return 0;
 }
