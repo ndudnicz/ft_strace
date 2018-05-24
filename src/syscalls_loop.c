@@ -19,15 +19,7 @@
 #include "syscalls_table.h"
 #include "syscalls_loop.h"
 #include "signal_handler.h"
-
-static int
-is_null_terminated(
-	long n
-) {
-	return (!((n>>56)&0xff) || !((n>>48)&0xff) || !((n>>40)&0xff) ||
-			!((n>>32)&0xff) || !((n>>24)&0xff) || !((n>>16)&0xff) ||
-			!((n>>8)&0xff) || !(n&0xff));
-}
+#include "signal_killer.h"
 
 static int
 print_escaped_str(
@@ -35,6 +27,7 @@ print_escaped_str(
 	char const *const str
 ) {
 	size_t const	len_max = strlen(str) < 32 ? strlen(str) : 32;
+
 	write(ctx.output_fd, "\"", 1);
 	for (size_t i = 0; i < len_max; ++i) {
 		switch (str[i]) {
@@ -76,26 +69,15 @@ peek_string(
 	int const reg_index
 ) {
 	unsigned long	tmp = 0;
-	size_t		n = 0;
+	size_t				n = 0;
 
 	*str = (char*)calloc(1, 33);
+	// printf("%llx\n", ((long*)regs)[reg_index]);
 	do {
-		tmp = (unsigned long)ptrace(PTRACE_PEEKDATA, pid, ((long*)regs)[reg_index] + n, NULL);
-		// if (tmp == -1) {
-		// 	printf("%ld\n", tmp);
-		// 	kill(pid, SIGKILL);
-		// 	exit(EXIT_FAILURE);
-		// };
+		tmp = (unsigned long)ptrace(PTRACE_PEEKDATA, pid, ((long*)regs)[reg_index] + n, 0L);
 		memcpy(*str + n, &tmp, sizeof(long));
-		// tmp = 0;
-		// printf("n:%zu\n", n);
 		n += sizeof(long);
-		// printf("tmp: %016lx is_null_terminated(tmp): %d\n", tmp, is_null_terminated(tmp));
-	} while (n < 32 && !is_null_terminated(tmp));
-	// printf("len:%zu\n", strlen(*str));
-	// (*str)[n] = 0;
-	// char *s = &(char*)tmp;
-	// printf("%8s", tmp);
+	} while (n < 32 && !memchr((void*)&tmp, 0, sizeof(long)));
 	return 0;
 }
 
@@ -123,16 +105,11 @@ print_param(
 		break;
 
 		case E_PTR:
-		dprintf(ctx.output_fd, "%016lx", ((unsigned long*)regs)[reg_index]);
+		dprintf(ctx.output_fd, "0x%lx", ((unsigned long*)regs)[reg_index]);
 		break;
 
 		case E_STR:
-		// size_t const		str_len = strlen(str);
-		// str = (char*)ptrace(PTRACE_PEEKDATA, pid, reg_index * sizeof(long), NULL);
 		peek_string(pid, &str, regs, reg_index);
-		// printf("--->%d %d\n", reg_index, RSI);
-		// write(1, str[0], 1);
-		// perror(NULL);
 		print_escaped_str(ctx, str);
 		if (strlen(str) == 32) {
 			write(ctx.output_fd, "...", 3);
@@ -143,7 +120,7 @@ print_param(
 		break;
 
 		case E_STRUCT:
-		dprintf(ctx.output_fd, "%016lx", ((unsigned long*)regs)[reg_index]);
+		dprintf(ctx.output_fd, "0x%lx", ((unsigned long*)regs)[reg_index]);
 		break;
 
 		default:
@@ -166,9 +143,9 @@ print_params(
 	for (int i = start; i < end; ++i) {
 		print_param(ctx, pid, syscall, syscall.params[ i ], regs, regs_indexes[ i ]);
 		if (i < syscall.n_param - 1) {
-			dprintf(2, ", ");
+			dprintf(ctx.output_fd, ", ");
 		} else {
-			dprintf(2, ")");
+			dprintf(ctx.output_fd, ")");
 		}
 	}
 	return 0;
@@ -181,79 +158,103 @@ get_syscall_number_and_registers(
 	long *retsyscall,
 	struct user_regs_struct *regs
 ) {
-	*syscall = ptrace(PTRACE_PEEKUSER, pid, sizeof(long)*ORIG_RAX, NULL);
-	ptrace(PTRACE_GETREGS, pid, NULL, regs);
-	*retsyscall = ptrace(PTRACE_PEEKUSER, pid, sizeof(long)*RAX, NULL);
+	ptrace(PTRACE_GETREGS, pid, 0L, regs);
+	*syscall = regs->orig_rax;
+	*retsyscall = regs->rax;
 	return 0;
+}
+
+static int
+wait_syscall(
+	t_context ctx,
+	pid_t pid
+) {
+	int		wstatus;
+
+	while (1) {
+		ptrace(PTRACE_SYSCALL, pid, 0L, 0L);
+		waitpid(pid, &wstatus, 0);
+		if (WIFSTOPPED(wstatus) && WSTOPSIG(wstatus) & 0x80) {
+			return 0;
+		} else {
+			signal_handler(ctx, pid, wstatus);
+		}
+		if (WIFEXITED(wstatus)) {
+			printf("WIFEXITED:%d WIFSIGNALED:%d\n", WIFEXITED(wstatus), WIFSIGNALED(wstatus));
+			return 1;
+		}
+	}
+	return 0;
+}
+
+static void	block_sig(sigset_t *sig_block)
+{
+	sigemptyset(sig_block);
+	sigaddset(sig_block, SIGHUP);
+	sigaddset(sig_block, SIGINT);
+	sigaddset(sig_block, SIGQUIT);
+	sigaddset(sig_block, SIGPIPE);
+	sigaddset(sig_block, SIGTERM);
+	sigprocmask(SIG_BLOCK, sig_block, NULL);
 }
 
 int
 syscalls_loop(
 	t_context ctx,
-	pid_t const pid
+	pid_t pid
 ) {
-	int							wstatus = 0;
-	struct rusage				rusage;
+	int												wstatus = 0;
+	struct rusage							rusage;
 	struct user_regs_struct		regs;
-	long						syscall = 0;
-	long						retsyscall = 0;
-	char						*error = NULL;
+	long											syscall = 0;
+	long											retsyscall = 0;
+	char											*error = NULL;
+	int												i = 0;
 
-	ptrace(PTRACE_SEIZE, pid, NULL, PTRACE_O_TRACESYSGOOD|PTRACE_O_TRACEEXEC|PTRACE_O_TRACEEXIT);
-	while (wait4(pid, &wstatus, 0, &rusage) && !WIFEXITED(wstatus)) {
+	sigset_t		set;
+	sigset_t		sig_block;
 
-		if (WIFSTOPPED(wstatus) && WSTOPSIG(wstatus) != SIGTRAP && WSTOPSIG(wstatus) != (SIGTRAP|0x80)) {
-			dprintf(2, "WIFSTOPPED1\n");
-			(void)signal_handler(ctx, wstatus);
-			ptrace(PTRACE_DETACH, pid, NULL, NULL);
-			break;
-		} else {
-			/* Syscall has been called by didn't returned yet */
-			get_syscall_number_and_registers(pid, &syscall, &retsyscall, &regs);
+	sigemptyset(&set);
+	ptrace(PTRACE_SEIZE, pid, 0L, PTRACE_O_TRACESYSGOOD);
+	ptrace(PTRACE_INTERRUPT, pid, 0L, 0L);
+	sigprocmask(SIG_SETMASK, &set, NULL);
+	ptrace(PTRACE_SYSCALL, pid, 0L, 0L);
+	// while (1) {
+	// 	printf("pid: %d  %d\n", waitpid(-1, &wstatus, P_ALL), wstatus>>8 == (SIGTRAP | (PTRACE_EVENT_EXEC<<8)));
+	// 	ptrace(PTRACE_SYSCALL, pid, 0L, 0L);
+	// }
+	// printf("new_pid:%d\n",waitpid(-1, &wstatus, P_ALL));
+	waitpid(pid, &wstatus, 0);
+	block_sig(&sig_block);
+	// ptrace(PTRACE_SETOPTIONS, pid, 0, PTRACE_O_TRACESYSGOOD|PTRACE_O_EXITKILL|PTRACE_O_TRACECLONE);
 
-			if (syscall == __NR_exit || syscall == __NR_exit_group) {
-				dprintf(2, "exited: %s\n", syscalls_table[syscall].name);
-				ptrace(PTRACE_GETREGS, pid, NULL, &regs);
-				printf("%s(%d) = ?\n", syscalls_table[syscall].name, (int)regs.rdi);
-				printf("+++ exited with %hhu +++\n", (unsigned char)regs.rdi);
-				break;
-			}
-
-			/* Print the first part of the line and wait for the syscall return */
-			dprintf(ctx.output_fd, "%s(", syscalls_table[syscall].name);
-			print_params(ctx, pid, syscalls_table[syscall], &regs, 0, syscalls_table[syscall].n_param_p1);
-			ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-			wait4(pid, &wstatus, 0, &rusage);
-			if (WIFSTOPPED(wstatus) && WSTOPSIG(wstatus) != SIGTRAP && WSTOPSIG(wstatus) != (SIGTRAP|0x80)) {
-				dprintf(2, "WIFSTOPPED2\n");
-				(void)signal_handler(ctx, wstatus);
-				ptrace(PTRACE_DETACH, pid, NULL, NULL);
-				// return 0;
-				break;
-			} else {
-				/* Syscall returned, finish to print the line */
-				get_syscall_number_and_registers(pid, &syscall, &retsyscall, &regs);
-
-				/*
-				** retsyscall < 0 ? -1 : retsyscall, errno is given as negative int
-				** so print -1, take the abs retsyscall value and get the errno str
-				** through strerror()
-				*/
-				print_params(ctx, pid, syscalls_table[syscall], &regs, syscalls_table[syscall].n_param_p1, syscalls_table[syscall].n_param);
-				dprintf(ctx.output_fd, " = %ld (%ld)(%p)", retsyscall < 0 ? -1 : retsyscall, retsyscall,retsyscall);
-				if ((unsigned long)(-retsyscall) != ENOSYS && retsyscall < 0) {
-					error = strerror(retsyscall * -1);
-					dprintf(ctx.output_fd, " (%s)", error);
-				}
-				dprintf(ctx.output_fd, "\n");
-
-			}
-
-
-			/* See you next syscall */
-			ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-
+	// signal_killer();
+	while (1) {
+		if (wait_syscall(ctx, pid)) {
+			return 0;
 		}
+		// if (WIFEXITED(wstatus)) {
+			// printf("WIFEXITED:%d WIFSIGNALED:%d\n", WIFEXITED(wstatus), WIFSIGNALED(wstatus));
+			// return 1;
+		// }
+		get_syscall_number_and_registers(pid, &syscall, &retsyscall, &regs);
+		// printf("%lld\n", regs.orig_rax);
+		dprintf(ctx.output_fd, "%s(", syscalls_table[syscall].name);
+		print_params(ctx, pid, syscalls_table[syscall], &regs, 0, syscalls_table[syscall].n_param_p1);
+
+		ptrace(PTRACE_SEIZE, pid, 0L, PTRACE_O_TRACESYSGOOD);
+		if (wait_syscall(ctx, pid)) {
+			return 0;
+		}
+		// if (WIFEXITED(wstatus)) {
+			// printf("WIFEXITED:%d WIFSIGNALED:%d\n", WIFEXITED(wstatus), WIFSIGNALED(wstatus));
+			// return 1;
+		// }
+		get_syscall_number_and_registers(pid, &syscall, &retsyscall, &regs);
+		print_params(ctx, pid, syscalls_table[syscall], &regs, syscalls_table[syscall].n_param_p1, syscalls_table[syscall].n_param);
+		dprintf(ctx.output_fd, " = %ld (%p)", retsyscall, retsyscall);
+		dprintf(ctx.output_fd, "\n");
+		i++;
 	}
 	return 0;
 }

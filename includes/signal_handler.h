@@ -4,6 +4,7 @@
 int
 signal_handler(
 	t_context ctx,
+	pid_t pid,
 	int const wstatus
 );
 

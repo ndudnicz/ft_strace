@@ -36,6 +36,10 @@ for (let i in data) {
 
 				params += params == "" ? "E_PTR":",E_PTR"
 
+			} else if (data[i][ii].indexOf("void") >= 0 && data[i][ii].indexOf("*") > data[i][ii].indexOf("void")) {
+
+				params += params == "" ? "E_PTR":",E_PTR"
+
 			}
 		}
 		for (let ii = 9 - data[i].length; ii >= 0; ii--) {

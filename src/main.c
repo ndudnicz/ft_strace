@@ -47,6 +47,7 @@ int		main(
 
 	} else {
 		pid_t	pid = 0;
+		int status;
 
 		if (signal_killer() < 0) {
 			ft_exit_perror(SIGACTION_FAILED, NULL);
@@ -55,12 +56,12 @@ int		main(
 				case -1:
 				ft_exit_perror(FORK_FAILED, NULL);
 				case 0:
-				execve(ctx.bin_fullpath, av + 1, env);
-				break;
+				raise(SIGSTOP);
+				return execv(ctx.bin_fullpath, av + 1);
+				// break;
 				default:
-				signal_killer();
-				(void)syscalls_loop(ctx, pid);
-				break;
+				return syscalls_loop(ctx, pid);
+				// break;
 			}
 		}
 	}
