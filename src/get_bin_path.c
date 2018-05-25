@@ -1,8 +1,9 @@
 #define _GNU_SOURCE /* asprintf */
 #include <stdio.h>
-#include <sys/stat.h>
+// #include <sys/stat.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "error.h"
 
@@ -11,8 +12,8 @@ check_path (
 	char const *const path,
 	char const *const bin_name
 ) {
-	struct stat		s;
-	char			*fullpath = NULL;
+
+	char		*fullpath = NULL;
 
 	if (strstr(bin_name, "./") == bin_name && asprintf(&fullpath, "%s", bin_name) < 0) {
 		ft_exit_perror(ASPRINTF_FAILED, NULL);
@@ -21,7 +22,7 @@ check_path (
 	} else if (fullpath == NULL && asprintf(&fullpath, "%s/%s", path, bin_name) < 0) {
 		ft_exit_perror(ASPRINTF_FAILED, NULL);
 	} else {
-		if (stat(fullpath, &s) < 0) {
+		if (access(fullpath, F_OK) < 0) {
 			free(fullpath);
 			fullpath = NULL;
 			return NULL;
@@ -42,7 +43,7 @@ get_bin_path (
 ) {
 	char	*env_path = secure_getenv("PATH");
 	char	*path = NULL;
-	char	*fullpath;
+	char	*fullpath = NULL;
 
 	if (env_path == NULL) {
 		ft_exit_perror(GETENV_FAILED, NULL);
