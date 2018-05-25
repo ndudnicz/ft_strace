@@ -1,6 +1,8 @@
 #ifndef ERROR_H
 #define ERROR_H
 
+# define EUNKNOWN	512
+
 # define GETENV_FAILED "secure_getenv() failed."
 # define ASPRINTF_FAILED "asprintf() failed."
 # define CANT_STAT "Can't stat"

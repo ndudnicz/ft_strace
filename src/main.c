@@ -12,7 +12,6 @@
 #include "options.h"
 #include "output_file.h"
 #include "free.h"
-#include "signal_killer.h"
 #include "syscalls_loop.h"
 
 __attribute__ ((noreturn)) static void
@@ -47,22 +46,18 @@ int		main(
 
 	} else {
 		pid_t	pid = 0;
-		int status;
 
-		if (signal_killer() < 0) {
-			ft_exit_perror(SIGACTION_FAILED, NULL);
-		} else {
-			switch (pid = fork()) {
-				case -1:
-				ft_exit_perror(FORK_FAILED, NULL);
-				case 0:
-				raise(SIGSTOP);
-				return execv(ctx.bin_fullpath, av + 1);
-				// break;
-				default:
-				return syscalls_loop(ctx, pid);
-				// break;
-			}
+		pid = fork();
+		switch (pid) {
+			case -1:
+			ft_exit_perror(FORK_FAILED, NULL);
+			case 0:
+			kill(getpid(), SIGSTOP);
+			return execve(ctx.bin_fullpath, av + 1, env);
+			break;
+			default:
+			syscalls_loop(ctx, pid);
+			break;
 		}
 	}
 	free_context(&ctx);

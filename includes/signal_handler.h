@@ -8,4 +8,11 @@ signal_handler(
 	int const wstatus
 );
 
+int
+signal_killer(
+	t_context ctx,
+	pid_t pid,
+	int const wstatus
+);
+
 #endif
