@@ -16,7 +16,6 @@ get_bin_path.c \
 options.c \
 output_file.c \
 free.c \
-signal_killer.c \
 syscalls_table.c \
 syscalls_loop.c \
 signal_handler.c \
