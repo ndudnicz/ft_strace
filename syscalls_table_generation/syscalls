@@ -1,4 +1,4 @@
-0	sys_read	3	0x00	unsigned int fd	char *buf	size_t count			
+0	sys_read	3	0x00	unsigned int fd	char *buf	size_t count
 1	sys_write	3	0x01	unsigned int fd	const char *buf	size_t count
 2	sys_open	3	0x02	const char *filename	int flags	int mode
 3	sys_close	1	0x03	unsigned int fd
@@ -156,7 +156,7 @@
 155	sys_pivot_root	2	0x9b	const char *new_root	const char *put_old
 1	sys_sysctl	1	0x01	struct __sysctl_args *args
 157	sys_prctl	4	0x9d	int option	unsigned long arg2	unsigned long arg3	unsigned long arg4
-158	sys_arch_prctl	3	0x9e	struct task_struct *task	int code	unsigned long *addr
+158	sys_arch_prctl	3	0x9e	int code	unsigned long *addr
 159	sys_adjtimex	1	0x9f	struct timex *txc_p
 160	sys_setrlimit	2	0xa0	unsigned int resource	struct rlimit *rlim
 161	sys_chroot	1	0xa1	const char *filename
