@@ -2,7 +2,7 @@ NAME = ft_strace
 
 CC = gcc
 
-FLAGS = -Wextra -Wall -g -fsanitize=address# -Werror -std=c89
+FLAGS = -Wextra -Wall -Werror -std=c89 -flto -O1
 
 PATH_SRC = src
 
@@ -15,7 +15,6 @@ main.c \
 get_bin_path.c \
 options.c \
 output_file.c \
-free.c \
 syscalls_table.c \
 syscalls_loop.c \
 signal_handler.c \

@@ -1,20 +1,17 @@
 #define _GNU_SOURCE
-#include <stdio.h>
+#include <stdio.h> /*dprintf*/
 #include <sys/ptrace.h> /*ptrace*/
-#include <sys/resource.h> /*rusage*/
 #include <sys/reg.h> /*ORIG_RAX*/
 #include <sys/user.h> /*strust user*/
 #include <sys/wait.h> /*waitpid*/
-#include <signal.h> /*sig defines*/
 #include <stdlib.h> /*calloc*/
 #include <errno.h> /*ENOSYS*/
-#include <linux/unistd.h> /*exit defines*/
+#include <linux/unistd.h> /*__NR_execve*/
 #include <string.h> /*strlen*/
 #include <unistd.h>/*write*/
 
 #include "context.h"
 #include "syscalls_table.h"
-#include "syscalls_loop.h"
 #include "signal_handler.h"
 #include "error.h"
 
@@ -29,9 +26,10 @@ print_escaped_str(
 ) {
 	size_t const	len = strlen(str);
 	int						printed = 0;
+	size_t				i = 0;
 
 	printed += write(ctx.output_fd, "\"", 1);
-	for (size_t i = 0; i < len && i < 32; ++i) {
+	for (i = 0; i < len && i < 32; ++i) {
 		switch (str[i]) {
 			case 0x07:
 			printed += write(ctx.output_fd, "\\a", 2);
@@ -119,8 +117,7 @@ print_param(
 		peek_string(pid, &str, regs, reg_index);
 		printed = print_escaped_str(ctx, str);
 		if (strlen(str) == 32) {
-			write(ctx.output_fd, "...", 3);
-			printed += 3;
+			printed += write(ctx.output_fd, "...", 3);
 		}
 		free(str);
 		str = NULL;
@@ -156,14 +153,19 @@ print_params(
 ) {
 	static const int	regs_indexes[6] = { RDI, RSI, RDX, R10, R8, R9 };
 	int								printed = 0;
+	int								i;
 
-	for (int i = 0; i < syscall.n_param; ++i) {
-		printed += print_param(ctx, pid, syscall.params[ i ], regs, regs_indexes[ i ]);
-		if (i < syscall.n_param - 1) {
-			printed += dprintf(ctx.output_fd, ", ");
-		} else {
-			printed += dprintf(ctx.output_fd, ")");
+	if (syscall.n_param > 0) {
+		for (i = 0; i < syscall.n_param; ++i) {
+			printed += print_param(ctx, pid, syscall.params[ i ], regs, regs_indexes[ i ]);
+			if (i < syscall.n_param - 1) {
+				printed += dprintf(ctx.output_fd, ", ");
+			} else {
+				printed += dprintf(ctx.output_fd, ")");
+			}
 		}
+	} else {
+		printed += dprintf(ctx.output_fd, ")");
 	}
 	return printed;
 }
@@ -199,7 +201,11 @@ wait_syscall(
 
 	while (1) {
 		ptrace(PTRACE_SYSCALL, pid, 0L, 0L);
-		waitpid(pid, &wstatus, 0);
+
+		sig_empty();
+		(void)waitpid(pid, &wstatus, 0);
+		sig_block();
+
 		if (i && WIFSTOPPED(wstatus) && WSTOPSIG(wstatus) & (SIGTRAP|0x80)) {
 			return 0;
 		} else if (!i && WIFSTOPPED(wstatus) && WSTOPSIG(wstatus) & 0x80) {
@@ -228,7 +234,11 @@ display_error_or_not(
 ) {
 	if (-retsyscall != ENOSYS) {
 		if (-retsyscall != EUNKNOWN) {
-			dprintf(ctx.output_fd, " = %ld (0x%lx)\n", retsyscall, retsyscall);
+			if (retsyscall < 0) {
+				dprintf(ctx.output_fd, " = %d (%s)\n", -1, strerror(-retsyscall));
+			} else {
+				dprintf(ctx.output_fd, " = %ld (0x%lx)\n", retsyscall, retsyscall);
+			}
 		} else {
 			dprintf(ctx.output_fd, " = ?\n");
 		}
@@ -241,34 +251,26 @@ syscalls_loop(
 	t_context ctx,
 	pid_t pid
 ) {
-	sigset_t									set;
-	sigset_t									block;
 	int												wstatus = 0;
-	struct user_regs_struct		regs_return;
-	struct user_regs_struct		regs_call;
+	struct user_regs_struct		regs;
 	long											syscall = 0;
 	long											retsyscall = 0;
 	int												i = 0;
 	int												printed = 0;
 
-	sigemptyset(&set);
-	ptrace(PTRACE_SEIZE, pid, 0L, PTRACE_O_TRACESYSGOOD);
-	ptrace(PTRACE_INTERRUPT, pid, 0L, 0L);
-	sigprocmask(SIG_SETMASK, &set, NULL);
-	sigemptyset(&block);
-	sigaddset(&block, SIGHUP);
-	sigaddset(&block, SIGINT);
-	sigaddset(&block, SIGQUIT);
-	sigaddset(&block, SIGPIPE);
-	sigaddset(&block, SIGTERM);
-	sigprocmask(SIG_BLOCK, &block, NULL);
-	waitpid(pid, &wstatus, 0);
+	if (ptrace(PTRACE_SEIZE, pid, 0L, PTRACE_O_TRACESYSGOOD) < 0  || ptrace(PTRACE_INTERRUPT, pid, 0L, 0L) < 0) {
+		ft_exit_perror(PTRACE_FAILED, NULL);
+	}
+
+	sig_empty();
+	(void)waitpid(pid, &wstatus, 0);
+	sig_block();
 
 	while (1) {
 		if (wait_syscall(ctx, pid, 1)) {
-			return 0;
+			return 1;
 		}
-		get_syscall_number_and_registers(pid, &syscall, &retsyscall, &regs_call);
+		get_syscall_number_and_registers(pid, &syscall, &retsyscall, &regs);
 		if (i == 0 && syscall == __NR_execve) {
 			i = 1;
 		}
@@ -277,13 +279,13 @@ syscalls_loop(
 		}
 		ptrace(PTRACE_SEIZE, pid, 0L, PTRACE_O_TRACESYSGOOD);
 		if (wait_syscall(ctx, pid, 0)) {
-			return 0;
+			return 2;
 		}
-		get_syscall_number_and_registers(pid, &syscall, &retsyscall, &regs_return);
+		get_syscall_number_and_registers(pid, &syscall, &retsyscall, &regs);
 		if ((i == 0 && syscall == __NR_execve) || i) {
 			i = 1;
 			printed += dprintf(ctx.output_fd, "%s(", syscalls_table[syscall].name);
-			printed += print_params(ctx, pid, syscalls_table[syscall], &regs_return);
+			printed += print_params(ctx, pid, syscalls_table[syscall], &regs);
 			while (printed < 39) {
 				dprintf(ctx.output_fd, " ");
 				printed++;
@@ -292,5 +294,5 @@ syscalls_loop(
 			display_error_or_not(ctx, retsyscall);
 		}
 	}
-	return 0;
+	return 3;
 }

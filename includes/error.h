@@ -12,6 +12,9 @@
 # define ARGUMENT_MISSING "missing argument."
 # define FORK_FAILED "fork() failed."
 # define SIGACTION_FAILED "sigaction failed."
+# define PTRACE_FAILED "ptrace() failed."
+# define SIG_BLOCK_FAILED "sig_block() failed."
+# define SIG_EMPTY_FAILED "sig_empty() failed."
 
 __attribute__ ((noreturn)) void
 ft_exit_error(

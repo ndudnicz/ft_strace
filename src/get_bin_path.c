@@ -1,16 +1,16 @@
 #define _GNU_SOURCE /* asprintf */
 #include <stdio.h>
-// #include <sys/stat.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "context.h"
 #include "error.h"
 
 static char*
 check_path (
 	char const *const path,
-	char const *const bin_name
+	char *bin_name
 ) {
 
 	char		*fullpath = NULL;
@@ -39,7 +39,7 @@ check_path (
 
 char*
 get_bin_path (
-	char const *const bin_name
+	char *bin_name
 ) {
 	char	*env_path = secure_getenv("PATH");
 	char	*path = NULL;

@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "context.h"
+#include "error.h"
+
 /* C global */
 
 extern const char *__progname;
@@ -16,9 +19,9 @@ ft_exit_error(
 	char const *const bin_name
 ) {
 	if (bin_name == NULL) {
-		dprintf(2, "%s: %s\n", __progname, error);
+		(void)dprintf(2, "%s: %s\n", __progname, error);
 	} else {
-		dprintf(2, "%s: %s '%s'\n", __progname, error, bin_name);
+		(void)dprintf(2, "%s: %s '%s'\n", __progname, error, bin_name);
 	}
 	exit(EXIT_FAILURE);
 }
@@ -36,9 +39,13 @@ ft_exit_perror(
 	char	*error_str;
 
 	if (bin_name == NULL) {
-		asprintf(&error_str, "%s: %s", __progname, error);
+		if (asprintf(&error_str, "%s: %s", __progname, error) < 0) {
+			ft_exit_perror(MALLOC_FAILED, NULL);
+		}
 	} else {
-		asprintf(&error_str, "%s: %s '%s'", __progname, error, bin_name);
+		if (asprintf(&error_str, "%s: %s '%s'", __progname, error, bin_name) < 0) {
+			ft_exit_perror(MALLOC_FAILED, NULL);
+		}
 	}
 	perror(error_str);
 	free(error_str);

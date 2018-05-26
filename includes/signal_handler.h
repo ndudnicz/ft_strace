@@ -15,4 +15,10 @@ signal_killer(
 	int const wstatus
 );
 
+void
+sig_block(void);
+
+void
+sig_empty(void);
+
 #endif

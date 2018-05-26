@@ -10,12 +10,12 @@ t_syscall const		syscalls_table[SYSCALL_NUMBER] = {
 	{.name="lstat", .n_param = 2, .params = { E_STR,E_STRUCT,E_NONE,E_NONE,E_NONE,E_NONE } },
 	{.name="poll", .n_param = 3, .params = { E_STRUCT,E_UINT,E_INT,E_NONE,E_NONE,E_NONE } },
 	{.name="lseek", .n_param = 3, .params = { E_INT,E_INT,E_INT,E_NONE,E_NONE,E_NONE } },
-	{.name="mmap", .n_param = 6, .params = { E_PTR,E_UINT,E_UINT,E_UINT,E_UINT,E_UINT } },
+	{.name="mmap", .n_param = 6, .params = { E_PTR,E_UINT,E_INT,E_INT,E_INT,E_PTR } },
 	{.name="mprotect", .n_param = 3, .params = { E_PTR,E_UINT,E_UINT,E_NONE,E_NONE,E_NONE } },
 	{.name="munmap", .n_param = 2, .params = { E_PTR,E_UINT,E_NONE,E_NONE,E_NONE,E_NONE } },
 	{.name="brk", .n_param = 1, .params = { E_PTR,E_NONE,E_NONE,E_NONE,E_NONE,E_NONE } },
-	{.name="rt_sigaction", .n_param = 4, .params = { E_INT,E_STRUCT,E_STRUCT,E_NONE,E_NONE } },
-	{.name="rt_sigprocmask", .n_param = 4, .params = { E_INT,E_PTR,E_PTR,E_NONE,E_NONE,E_NONE } },
+	{.name="rt_sigaction", .n_param = 4, .params = { E_INT,E_STRUCT,E_STRUCT,E_INT,E_NONE,E_NONE } },
+	{.name="rt_sigprocmask", .n_param = 4, .params = { E_INT,E_PTR,E_PTR,E_INT,E_NONE,E_NONE } },
 	{.name="rt_sigreturn", .n_param = 1, .params = { E_UINT,E_NONE,E_NONE,E_NONE,E_NONE,E_NONE } },
 	{.name="ioctl", .n_param = 2, .params = { E_INT,E_UINT,E_NONE,E_NONE,E_NONE,E_NONE } },
 	{.name="pread64", .n_param = 4, .params = { E_UINT,E_PTR,E_UINT,E_INT,E_NONE,E_NONE } },
@@ -27,7 +27,7 @@ t_syscall const		syscalls_table[SYSCALL_NUMBER] = {
 	{.name="select", .n_param = 5, .params = { E_INT,E_PTR,E_PTR,E_PTR,E_STRUCT,E_NONE } },
 	{.name="sched_yield", .n_param = 0, .params = { E_NONE,E_NONE,E_NONE,E_NONE,E_NONE,E_NONE } },
 	{.name="mremap", .n_param = 5, .params = { E_PTR,E_UINT,E_UINT,E_INT,E_NONE,E_NONE } },
-	{.name="msync", .n_param = 3, .params = { E_PTR,E_UINT,E_INT,E_NONE,E_NONE,E_NONE } }, // -------->
+	{.name="msync", .n_param = 3, .params = { E_PTR,E_UINT,E_INT,E_NONE,E_NONE,E_NONE } },
 	{.name="mincore", .n_param = 3, .params = { E_UINT,E_UINT,E_UINT,E_NONE,E_NONE,E_NONE } },
 	{.name="madvise", .n_param = 3, .params = { E_UINT,E_UINT,E_INT,E_NONE,E_NONE,E_NONE } },
 	{.name="shmget", .n_param = 3, .params = { E_INT,E_UINT,E_INT,E_NONE,E_NONE,E_NONE } },
@@ -57,7 +57,7 @@ t_syscall const		syscalls_table[SYSCALL_NUMBER] = {
 	{.name="socketpair", .n_param = 4, .params = { E_INT,E_INT,E_INT,E_INT,E_NONE,E_NONE } },
 	{.name="setsockopt", .n_param = 5, .params = { E_INT,E_INT,E_INT,E_STR,E_INT,E_NONE } },
 	{.name="getsockopt", .n_param = 5, .params = { E_INT,E_INT,E_INT,E_STR,E_INT,E_NONE } },
-	{.name="clone", .n_param = 4, .params = { E_UINT,E_UINT,E_PTR,E_PTR,E_NONE,E_NONE } },
+	{.name="clone", .n_param = 4, .params = { E_UINT,E_PTR,E_INT,E_PTR,E_NONE,E_NONE } },
 	{.name="fork", .n_param = 0, .params = { E_NONE,E_NONE,E_NONE,E_NONE,E_NONE,E_NONE } },
 	{.name="vfork", .n_param = 0, .params = { E_NONE,E_NONE,E_NONE,E_NONE,E_NONE,E_NONE } },
 	{.name="execve", .n_param = 3, .params = { E_STR,E_PTR,E_PTR,E_NONE,E_NONE,E_NONE } },
@@ -159,7 +159,7 @@ t_syscall const		syscalls_table[SYSCALL_NUMBER] = {
 	{.name="pivot_root", .n_param = 2, .params = { E_STR,E_STR,E_NONE,E_NONE,E_NONE,E_NONE } },
 	{.name="sysctl", .n_param = 1, .params = { E_STRUCT,E_NONE,E_NONE,E_NONE,E_NONE,E_NONE } },
 	{.name="prctl", .n_param = 4, .params = { E_INT,E_UINT,E_UINT,E_UINT,E_NONE,E_NONE } },
-	{.name="arch_prctl", .n_param = 3, .params = { E_INT,E_UINT,E_NONE,E_NONE,E_NONE,E_NONE } },
+	{.name="arch_prctl", .n_param = 2, .params = { E_INT,E_PTR,E_NONE,E_NONE,E_NONE,E_NONE } },
 	{.name="adjtimex", .n_param = 1, .params = { E_STRUCT,E_NONE,E_NONE,E_NONE,E_NONE,E_NONE } },
 	{.name="setrlimit", .n_param = 2, .params = { E_UINT,E_STRUCT,E_NONE,E_NONE,E_NONE,E_NONE } },
 	{.name="chroot", .n_param = 1, .params = { E_STR,E_NONE,E_NONE,E_NONE,E_NONE,E_NONE } },
@@ -219,7 +219,7 @@ t_syscall const		syscalls_table[SYSCALL_NUMBER] = {
 	{.name="epoll_wait_old", .n_param = 0, .params = { E_NONE,E_NONE,E_NONE,E_NONE,E_NONE,E_NONE } },
 	{.name="remap_file_pages", .n_param = 5, .params = { E_UINT,E_UINT,E_UINT,E_UINT,E_UINT,E_NONE } },
 	{.name="getdents64", .n_param = 3, .params = { E_UINT,E_STRUCT,E_UINT,E_NONE,E_NONE,E_NONE } },
-	{.name="set_tid_address", .n_param = 1, .params = { E_INT,E_NONE,E_NONE,E_NONE,E_NONE,E_NONE } },
+	{.name="set_tid_address", .n_param = 1, .params = { E_PTR,E_NONE,E_NONE,E_NONE,E_NONE,E_NONE } },
 	{.name="restart_syscall", .n_param = 0, .params = { E_NONE,E_NONE,E_NONE,E_NONE,E_NONE,E_NONE } },
 	{.name="semtimedop", .n_param = 4, .params = { E_INT,E_STRUCT,E_UINT,E_STRUCT,E_NONE,E_NONE } },
 	{.name="fadvise64", .n_param = 4, .params = { E_INT,E_INT,E_UINT,E_INT,E_NONE,E_NONE } },
@@ -336,7 +336,3 @@ t_syscall const		syscalls_table[SYSCALL_NUMBER] = {
 	{.name="pkey_free", .n_param = 1, .params = { E_INT,E_NONE,E_NONE,E_NONE,E_NONE,E_NONE } },
 	{.name="statx", .n_param = 5, .params = { E_INT,E_STR,E_INT,E_UINT,E_STRUCT,E_NONE } }
 };
-
-// void print_syscall(void) {
-// 	printf("%s\n", syscalls_table[328].name);
-// }
