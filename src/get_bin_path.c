@@ -12,7 +12,6 @@ check_path (
 	char const *const path,
 	char *bin_name
 ) {
-
 	char		*fullpath = NULL;
 
 	if (strstr(bin_name, "./") == bin_name && asprintf(&fullpath, "%s", bin_name) < 0) {

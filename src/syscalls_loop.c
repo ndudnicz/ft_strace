@@ -21,43 +21,42 @@
 
 static int
 print_escaped_str(
-	t_context ctx,
 	char const *const str
 ) {
 	size_t const	len = strlen(str);
 	int						printed = 0;
 	size_t				i = 0;
 
-	printed += write(ctx.output_fd, "\"", 1);
+	printed += write(2, "\"", 1);
 	for (i = 0; i < len && i < 32; ++i) {
 		switch (str[i]) {
 			case 0x07:
-			printed += write(ctx.output_fd, "\\a", 2);
+			printed += write(2, "\\a", 2);
 			break;
 			case 0x08:
-			printed += write(ctx.output_fd, "\\b", 2);
+			printed += write(2, "\\b", 2);
 			break;
 			case 0x09:
-			printed += write(ctx.output_fd, "\\t", 2);
+			printed += write(2, "\\t", 2);
 			break;
 			case 0x0a:
-			printed += write(ctx.output_fd, "\\n", 2);
+			printed += write(2, "\\n", 2);
 			break;
 			case 0x0b:
-			printed += write(ctx.output_fd, "\\v", 2);
+			printed += write(2, "\\v", 2);
 			break;
 			case 0x0c:
-			printed += write(ctx.output_fd, "\\f", 2);
+			printed += write(2, "\\f", 2);
 			break;
 			case 0x0d:
-			printed += write(ctx.output_fd, "\\r", 2);
+			printed += write(2, "\\r", 2);
 			break;
 			default:
-			printed += write(ctx.output_fd, str + i, 1);
+			printed += write(2, str + i, 1);
 			break;
 		}
 	}
-	printed += write(ctx.output_fd, "\"", 1);
+	printed += write(2, "\"", 1);
 	return printed;
 }
 
@@ -93,7 +92,6 @@ peek_string(
 
 static int
 print_param(
-	t_context const ctx,
 	pid_t const pid,
 	enum e_param const param_type,
 	struct user_regs_struct *const regs,
@@ -108,16 +106,16 @@ print_param(
 		break;
 
 		case E_INT:
-		return dprintf(ctx.output_fd, "%d", (int)((long*)regs)[reg_index]);
+		return dprintf(2, "%d", (int)((long*)regs)[reg_index]);
 
 		case E_UINT:
-		return dprintf(ctx.output_fd, "%u", (unsigned int)((unsigned long*)regs)[reg_index]);
+		return dprintf(2, "%u", (unsigned int)((unsigned long*)regs)[reg_index]);
 
 		case E_STR:
 		peek_string(pid, &str, regs, reg_index);
-		printed = print_escaped_str(ctx, str);
+		printed = print_escaped_str(str);
 		if (strlen(str) == 32) {
-			printed += write(ctx.output_fd, "...", 3);
+			printed += write(2, "...", 3);
 		}
 		free(str);
 		str = NULL;
@@ -125,16 +123,16 @@ print_param(
 
 		case E_STRUCT:
 		if (((unsigned long*)regs)[reg_index]) {
-			return dprintf(ctx.output_fd, "{ 0x%lx }", ((unsigned long*)regs)[reg_index]);
+			return dprintf(2, "{ 0x%lx }", ((unsigned long*)regs)[reg_index]);
 		} else {
-			return dprintf(ctx.output_fd, "{ NULL }");
+			return dprintf(2, "{ NULL }");
 		}
 
 		default:
 		if (((unsigned long*)regs)[reg_index]) {
-			return dprintf(ctx.output_fd, "0x%lx", ((unsigned long*)regs)[reg_index]);
+			return dprintf(2, "0x%lx", ((unsigned long*)regs)[reg_index]);
 		} else {
-			return dprintf(ctx.output_fd, "NULL");
+			return dprintf(2, "NULL");
 		}
 	}
 	return 0;
@@ -146,7 +144,6 @@ print_param(
 
 static int
 print_params(
-	t_context const ctx,
 	pid_t const pid,
 	t_syscall const syscall,
 	struct user_regs_struct *const regs
@@ -157,15 +154,15 @@ print_params(
 
 	if (syscall.n_param > 0) {
 		for (i = 0; i < syscall.n_param; ++i) {
-			printed += print_param(ctx, pid, syscall.params[ i ], regs, regs_indexes[ i ]);
+			printed += print_param(pid, syscall.params[ i ], regs, regs_indexes[ i ]);
 			if (i < syscall.n_param - 1) {
-				printed += dprintf(ctx.output_fd, ", ");
+				printed += dprintf(2, ", ");
 			} else {
-				printed += dprintf(ctx.output_fd, ")");
+				printed += dprintf(2, ")");
 			}
 		}
 	} else {
-		printed += dprintf(ctx.output_fd, ")");
+		printed += dprintf(2, ")");
 	}
 	return printed;
 }
@@ -193,7 +190,6 @@ get_syscall_number_and_registers(
 
 static int
 wait_syscall(
-	t_context ctx,
 	pid_t pid,
 	int i
 ) {
@@ -212,12 +208,12 @@ wait_syscall(
 			return 0;
 		} else {
 			if (WIFEXITED(wstatus)) {
-				dprintf(ctx.output_fd, " = ?\n+++ exited with %d +++\n", WEXITSTATUS(wstatus));
+				dprintf(2, " = ?\n+++ exited with %d +++\n", WEXITSTATUS(wstatus));
 				exit(0);
 			} else {
-				signal_handler(ctx, pid, wstatus);
+				signal_handler(pid, wstatus);
 			}
-			signal_killer(ctx, pid, wstatus);
+			signal_killer(pid, wstatus);
 		}
 	}
 	return 0;
@@ -229,18 +225,17 @@ wait_syscall(
 
 static int
 display_error_or_not(
-	t_context ctx,
 	long retsyscall
 ) {
 	if (-retsyscall != ENOSYS) {
 		if (-retsyscall != EUNKNOWN) {
 			if (retsyscall < 0) {
-				dprintf(ctx.output_fd, " = %d (%s)\n", -1, strerror(-retsyscall));
+				dprintf(2, " = %d (%s)\n", -1, strerror(-retsyscall));
 			} else {
-				dprintf(ctx.output_fd, " = %ld (0x%lx)\n", retsyscall, retsyscall);
+				dprintf(2, " = %ld (0x%lx)\n", retsyscall, retsyscall);
 			}
 		} else {
-			dprintf(ctx.output_fd, " = ?\n");
+			dprintf(2, " = ?\n");
 		}
 	}
 	return 0;
@@ -248,7 +243,6 @@ display_error_or_not(
 
 int
 syscalls_loop(
-	t_context ctx,
 	pid_t pid
 ) {
 	int												wstatus = 0;
@@ -267,7 +261,7 @@ syscalls_loop(
 	sig_block();
 
 	while (1) {
-		if (wait_syscall(ctx, pid, 1)) {
+		if (wait_syscall(pid, 1)) {
 			return 1;
 		}
 		get_syscall_number_and_registers(pid, &syscall, &retsyscall, &regs);
@@ -275,23 +269,23 @@ syscalls_loop(
 			i = 1;
 		}
 		if (i) {
-			display_error_or_not(ctx, retsyscall);
+			display_error_or_not(retsyscall);
 		}
 		ptrace(PTRACE_SEIZE, pid, 0L, PTRACE_O_TRACESYSGOOD);
-		if (wait_syscall(ctx, pid, 0)) {
+		if (wait_syscall(pid, 0)) {
 			return 2;
 		}
 		get_syscall_number_and_registers(pid, &syscall, &retsyscall, &regs);
 		if ((i == 0 && syscall == __NR_execve) || i) {
 			i = 1;
-			printed += dprintf(ctx.output_fd, "%s(", syscalls_table[syscall].name);
-			printed += print_params(ctx, pid, syscalls_table[syscall], &regs);
+			printed += dprintf(2, "%s(", syscalls_table[syscall].name);
+			printed += print_params(pid, syscalls_table[syscall], &regs);
 			while (printed < 39) {
-				dprintf(ctx.output_fd, " ");
+				dprintf(2, " ");
 				printed++;
 			}
 			printed = 0;
-			display_error_or_not(ctx, retsyscall);
+			display_error_or_not(retsyscall);
 		}
 	}
 	return 3;

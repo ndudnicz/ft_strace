@@ -3,15 +3,13 @@
 
 int
 signal_handler(
-	t_context ctx,
-	pid_t pid,
+	pid_t const pid,
 	int const wstatus
 );
 
 int
 signal_killer(
-	t_context ctx,
-	pid_t pid,
+	pid_t const pid,
 	int const wstatus
 );
 

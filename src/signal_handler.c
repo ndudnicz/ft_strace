@@ -22,8 +22,7 @@ static char const *const	g_sig_table[64] = {
 
 int
 signal_handler(
-	t_context ctx,
-	pid_t pid,
+	pid_t const pid,
 	int const wstatus
 ) {
 	siginfo_t		siginfo;
@@ -34,7 +33,7 @@ signal_handler(
 	} else {
 		if (WSTOPSIG(wstatus) < 32) {
 			/* SIGNALS 1-32 */
-			(void)dprintf(ctx.output_fd, "--- %s {si_signo=%s, si_code=%d, si_pid=%d, si_uid=%d} ---\n",
+			(void)dprintf(2, "--- %s {si_signo=%s, si_code=%d, si_pid=%d, si_uid=%d} ---\n",
 				g_sig_table[WSTOPSIG(wstatus)],
 				g_sig_table[WSTOPSIG(wstatus)],
 				siginfo.si_code,
@@ -43,7 +42,7 @@ signal_handler(
 			);
 		} else {
 			/* REAL TIME SIGNALS 33-64 */
-			(void)dprintf(ctx.output_fd, "--- SIGRT_%d {si_signo=SIGRT_%d, si_code=%d, si_pid=%d, si_uid=%d}\n",
+			(void)dprintf(2, "--- SIGRT_%d {si_signo=SIGRT_%d, si_code=%d, si_pid=%d, si_uid=%d}\n",
 				WSTOPSIG(wstatus) - 32,
 				WSTOPSIG(wstatus) - 32,
 				siginfo.si_code,
@@ -61,8 +60,7 @@ signal_handler(
 
 int
 signal_killer(
-	t_context ctx,
-	pid_t pid,
+	pid_t const pid,
 	int const wstatus
 ) {
 	if (
@@ -79,12 +77,12 @@ signal_killer(
 		(void)kill(pid, WSTOPSIG(wstatus));
 		if (WSTOPSIG(wstatus) < 32) {
 			/* SIGNALS 1-32 */
-			(void)dprintf(ctx.output_fd, "+++ killed by %s +++\n", g_sig_table[WEXITSTATUS(wstatus)]);
+			(void)dprintf(2, "+++ killed by %s +++\n", g_sig_table[WEXITSTATUS(wstatus)]);
 		} else {
 			/* REAL TIME SIGNALS 33-64 */
-			(void)dprintf(ctx.output_fd, "+++ killed by SIGRT_%d +++\n", WEXITSTATUS(wstatus) - 32);
+			(void)dprintf(2, "+++ killed by SIGRT_%d +++\n", WEXITSTATUS(wstatus) - 32);
 		}
-		(void)dprintf(ctx.output_fd, "%s\n", strsignal(WSTOPSIG(wstatus)));
+		(void)dprintf(2, "%s\n", strsignal(WSTOPSIG(wstatus)));
 		exit(0);
 	} else {
 		return 0;
