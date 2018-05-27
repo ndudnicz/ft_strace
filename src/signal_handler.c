@@ -20,10 +20,6 @@ static char const *const	g_sig_table[64] = {
 	"SIGIO","SIGPWR","SIGSYS"
 };
 
-/*
-** Display signals info or exit if CTRL-C
-*/
-
 int
 signal_handler(
 	t_context ctx,
@@ -35,9 +31,6 @@ signal_handler(
 	(void)ptrace(PTRACE_GETSIGINFO, pid, 0L, &siginfo);
 	if (WSTOPSIG(wstatus) < 1 || WSTOPSIG(wstatus) > 64) {
 		return 1;
-	/*} else if (siginfo.si_signo == SIGINT) {
-		(void)dprintf(ctx.output_fd, "%s: Process %d detached\n<detached ...>\n", __progname, pid);
-		return 0;*/
 	} else {
 		if (WSTOPSIG(wstatus) < 32) {
 			/* SIGNALS 1-32 */

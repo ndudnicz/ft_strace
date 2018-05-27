@@ -9,8 +9,6 @@
 #include "context.h"
 #include "error.h"
 #include "get_bin_path.h"
-#include "options.h"
-#include "output_file.h"
 #include "syscalls_loop.h"
 
 pid_t							g_pid = 0;
@@ -40,15 +38,10 @@ int		main(
 	t_context	ctx;
 
 	(void)memset(&ctx, 0, sizeof(t_context));
-	(void)get_options(&ctx, &ac, av);
 	if (ac < 2) {
 
 		(void)dprintf(2, "ft_strace: must have PROG [ARGS]\n");
 		usage(EXIT_FAILURE);
-
-	} else if ((ctx.options & OPT_OUTPUT_FILE) && open_output_file(&ctx) <= 0) {
-
-		ft_exit_perror(CANT_OPEN, ctx.output_filename);
 
 	} else if ((ctx.bin_fullpath = get_bin_path(av[1])) == NULL) {
 

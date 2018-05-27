@@ -2,9 +2,9 @@
 #define CONTEXT_H
 
 typedef struct {
-	char			*bin_fullpath; /* malloc */
-	char			*output_filename; /* malloc */
-	int				output_fd; /* open */
+	char			*bin_fullpath;
+	char			*output_filename;
+	int				output_fd;
 	unsigned char	options;
 }				t_context;
 

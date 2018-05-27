@@ -13,11 +13,11 @@ enum e_param {
 };
 
 typedef struct		s_syscall {
-	char const *const		name;
-	int const				n_param;
+	char const *const			name;
+	int const							n_param;
 	enum e_param const		params[6];
 }					t_syscall;
 
 extern t_syscall const syscalls_table[SYSCALL_NUMBER];
 
-#endif
+#endif /* end of include guard: SYSCALLS_TABLE_H */

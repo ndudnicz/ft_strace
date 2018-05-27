@@ -13,8 +13,6 @@ PATH_INCLUDES = includes/
 SRC =	\
 main.c \
 get_bin_path.c \
-options.c \
-output_file.c \
 syscalls_table.c \
 syscalls_loop.c \
 signal_handler.c \

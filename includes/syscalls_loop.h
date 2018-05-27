@@ -14,4 +14,4 @@ syscalls_loop(
 	pid_t const pid
 );
 
-#endif
+#endif /* end of include guard: SYSCALLS_LOOP_H */

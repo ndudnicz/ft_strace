@@ -5,7 +5,6 @@ let params = ""
 for (let i in data) {
 
 	if (data[i][1]) {
-		// console.log(data[i]);
 		params = ""
 		for (let ii = 4; ii < data[i].length; ii++) {
 			if (data[i][ii].indexOf("struct") >= 0) {
@@ -51,11 +50,4 @@ for (let i in data) {
 		}
 		console.log('{.name="'+data[i][1].replace("sys_", "")+'",', ".n_param = "+ data[i][2]+ ", .params = {",params, "} },");
 	}
-	// let retReg = /^{ ([a-z]+)/
-	// if (data[i].match(retReg)) {
-    //
-	// // console.log(data[i].match(retReg)[1]);
-	// } else {
-	// 	console.log(data[i]);
-	// }
 }
